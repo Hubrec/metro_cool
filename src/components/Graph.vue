@@ -2,6 +2,7 @@
 import {Network} from 'vis-network';
 import {DataSet} from 'vis-data';
 import {extractLinks, extractNodes} from "@/service/http/fetchAPI.js";
+import Zoomist from "zoomist";
 
 export default {
   data() {
@@ -16,9 +17,14 @@ export default {
 
     const container = document.getElementById('mynetwork');
 
+    // Zoomist initialisation
+    const zoomist = new Zoomist("#zoomist", {
+      slider: true,
+      zoomer: true,
+    });
+
     const nodesData = await extractNodes();
     this.nodes = new DataSet(nodesData);
-
     const linksData = await extractLinks();
     this.edges = new DataSet(linksData);
 
@@ -66,89 +72,13 @@ export default {
         enabled: false,
       },
       interaction: {
-        dragNodes: true,
-        dragView: true,
-        zoomView: true,
+        dragNodes: false,
+        dragView: false,
+        zoomView: false,
         hover: true,
         multiselect: true,
       },
     };
-    // fancy settings
-    // const options = {
-    //   nodes: {
-    //     shape: 'dot',
-    //     size: 16,
-    //     color: {
-    //       border: '#2B7CE9',
-    //       background: '#97C2FC',
-    //       highlight: {
-    //         border: '#2B7CE9',
-    //         background: '#D2E5FF'
-    //       },
-    //       hover: {
-    //         border: '#2B7CE9',
-    //         background: '#D2E5FF'
-    //       }
-    //     },
-    //     font: {
-    //       size: 16,
-    //       color: '#dcdcdc'
-    //     },
-    //     borderWidth: 2,
-    //     shadow: false
-    //   },
-    //   edges: {
-    //     width: 2,
-    //     color: {
-    //       color: '#848484',
-    //       highlight: '#848484',
-    //       hover: '#848484',
-    //       inherit: 'from',
-    //       opacity: 0.8
-    //     },
-    //     smooth: {
-    //       type: 'dynamic', // Change to 'dynamic' or 'straight' for better performance
-    //     },
-    //     shadow: false
-    //   },
-    //   physics: {
-    //     enabled: true, // Disable physics for better performance
-    //     barnesHut: {
-    //       gravitationalConstant: -8000,
-    //       centralGravity: 0.3,
-    //       springLength: 95,
-    //       springConstant: 0.04,
-    //       damping: 0.09,
-    //       avoidOverlap: 0.1
-    //     },
-    //     stabilization: {
-    //       enabled: true,
-    //       iterations: 1000,
-    //       updateInterval: 25,
-    //     }
-    //   },
-    //   interaction: {
-    //     dragNodes: true,
-    //     dragView: true,
-    //     zoomView: true,
-    //     hover: true,
-    //     multiselect: true,
-    //   },
-    //   layout: {
-    //     improvedLayout: true,
-    //     hierarchical: {
-    //       enabled: false,
-    //       levelSeparation: 150,
-    //       nodeSpacing: 100,
-    //       treeSpacing: 200,
-    //       blockShifting: true,
-    //       edgeMinimization: true,
-    //       parentCentralization: true,
-    //       direction: 'UD',
-    //       sortMethod: 'hubsize'
-    //     }
-    //   }
-    // };
     this.network = new Network(container, data, basicOptions);
   },
   methods: {
@@ -161,24 +91,43 @@ export default {
 </script>
 
 <template>
-    <div id="mynetwork"></div>
-    <div class="param-buttons">
-      <button class="buttonsActions" @click="printValues">Print Values</button>
+  <div class="zoomist-container">
+    <div id="zoomist" class="zoomist-wrapper">
+      <div class="zoomist-image">
+        <div id="mynetwork"></div>
+      </div>
     </div>
+  </div>
+  <div class="param-buttons">
+    <button class="buttonsActions" @click="printValues">Print Values</button>
+  </div>
 </template>
 
 <style>
-#mynetwork {
-  position: absolute;
-  top: 5vh;
-  left: 15vh;
-  height: 90vh;
-  width: 90vh;
-  backdrop-filter: contrast(0.8);
+
+.zoomist-wrapper {
+  height: 100%;
+  width: 100%;
   overflow: hidden;
+}
+
+.zoomist-container {
+  height: 100%;
   background-image: url("../assets/metrof_r.png");
   background-size: cover;
   opacity: 0.95;
+}
+
+.zoomist-image {
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.zoomist-image div {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
 .param-buttons {
