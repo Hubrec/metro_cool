@@ -2,7 +2,6 @@
 import {Network} from 'vis-network';
 import {DataSet} from 'vis-data';
 import {extractLinks, extractNodes} from "@/service/http/fetchAPI.js";
-import Zoomist from "zoomist";
 
 export default {
   data() {
@@ -10,18 +9,11 @@ export default {
       nodes: null,
       edges: null,
       network: null,
-      nodeIdCounter: 400
     };
   },
   async mounted() {
 
     const container = document.getElementById('mynetwork');
-
-    // Zoomist initialisation
-    const zoomist = new Zoomist("#zoomist", {
-      slider: true,
-      zoomer: true,
-    });
 
     const nodesData = await extractNodes();
     this.nodes = new DataSet(nodesData);
@@ -34,21 +26,10 @@ export default {
       nodes: {
         shape: 'dot',
         size: 4,
-        color: {
-          border: '#2B7CE9',
-          background: '#97C2FC',
-          highlight: {
-            border: '#2B7CE9',
-            background: '#D2E5FF'
-          },
-          hover: {
-            border: '#2B7CE9',
-            background: '#D2E5FF'
-          }
-        },
         font: {
           size: 6,
-          color: 'rgba(0,0,0,0)'
+          color: 'rgba(210,210,210,1)',
+          strokeWidth: 0,
         },
         borderWidth: 2,
         shadow: false
@@ -57,8 +38,8 @@ export default {
         width: 2,
         color: {
           color: '#848484',
-          highlight: '#848484',
-          hover: '#848484',
+          highlight: '#6c6c6c',
+          hover: '#6c6c6c',
           inherit: 'from',
           opacity: 0.8
         },
@@ -73,61 +54,59 @@ export default {
       },
       interaction: {
         dragNodes: false,
-        dragView: false,
-        zoomView: false,
+        dragView: true,
+        zoomView: true,
         hover: true,
         multiselect: true,
       },
     };
     this.network = new Network(container, data, basicOptions);
+
+    this.network.on('hoverNode', (params) => {
+      this.onHoverNode(params.node);
+    });
+
+    this.network.on('blurNode', (params) => {
+      this.offHoverNode(params.node);
+    });
   },
   methods: {
     printValues() {
       console.log(this.nodes.get());
       console.log(this.edges.get());
+    },
+    onHoverNode(nodeId) {
+      console.log(this.nodes.get().find( node => node.id === nodeId));
+    },
+    offHoverNode(nodeId) {
+      console.log(this.nodes.get().find( node => node.id === nodeId));
+    },
+    calcItinerary() {
+      const selectedNodes = this.network.get().getSelectedNodes();
+      console.log(selectedNodes);
     }
   }
 }
 </script>
 
 <template>
-  <div class="zoomist-container">
-    <div id="zoomist" class="zoomist-wrapper">
-      <div class="zoomist-image">
-        <div id="mynetwork"></div>
-      </div>
-    </div>
-  </div>
+  <div id="mynetwork"></div>
   <div class="param-buttons">
     <button class="buttonsActions" @click="printValues">Print Values</button>
+    <button class="buttonsActions" @click="calcItinerary">Calculate itinerary</button>
   </div>
 </template>
 
 <style>
 
-.zoomist-wrapper {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
-
-.zoomist-container {
-  height: 100%;
-  background-image: url("../assets/metrof_r.png");
-  background-size: cover;
-  opacity: 0.95;
-}
-
-.zoomist-image {
-  width: 100%;
-  aspect-ratio: 1;
-}
-
-.zoomist-image div {
+#mynetwork {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
+  backdrop-filter: contrast(0.8);
+  border: 1px solid lightgray;
 }
 
 .param-buttons {

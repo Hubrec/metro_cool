@@ -1,14 +1,15 @@
 # metro_cool
 
-This template should help get you started developing with Vue 3 in Vite.
+A school project that implements a Paris Subway view with Vue 3 and Vite.
 
-## Recommended IDE Setup
+## Dataset
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+The dataset provided had some missing lines on the pospoints.txt file. I've added the missing lines manually.
+The points I added are:
+- Bercy (740, 760)
+- Pyramides (417, 504)
 
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
+## Features
 
 ## Project Setup
 
