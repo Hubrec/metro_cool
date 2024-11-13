@@ -1,9 +1,10 @@
 <script setup>
 import Graph from "@/components/Graph.vue";
+
 </script>
 
 <template>
-  <graph/>
+  <Graph/>
 </template>
 
 <style scoped>

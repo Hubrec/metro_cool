@@ -2,6 +2,9 @@
 import {Network} from 'vis-network';
 import {DataSet} from 'vis-data';
 import {extractLinks, extractNodes} from "@/service/http/fetchAPI.js";
+import {checkAndMakeConnectivity} from "@/service/algorithms/connectivity.js";
+import {bellmanFord} from "@/service/algorithms/shortestPath.js";
+import {prim} from "@/service/algorithms/coveringTree.js";
 
 export default {
   data() {
@@ -9,6 +12,10 @@ export default {
       nodes: null,
       edges: null,
       network: null,
+      stationsVisibility: true,
+      selectedNodes: [],
+      itineraryInProgress: false,
+      snackBarText: '',
     };
   },
   async mounted() {
@@ -19,6 +26,14 @@ export default {
     this.nodes = new DataSet(nodesData);
     const linksData = await extractLinks();
     this.edges = new DataSet(linksData);
+
+    // We check connectivity of the input graph data
+    if (checkAndMakeConnectivity(this.nodes, this.edges)) {
+      this.useSnackBar('Graph is connected', 'green');
+    }
+    else {
+      this.useSnackBar('Graph is not connected', 'red');
+    }
 
     const data = {nodes: this.nodes, edges: this.edges};
 
@@ -69,31 +84,110 @@ export default {
     this.network.on('blurNode', (params) => {
       this.offHoverNode(params.node);
     });
+
+    this.network.on('selectNode', (params) => {
+      this.selectedNodes = params.nodes;
+    });
+
+    this.network.on('deselectNode', (params) => {
+      this.selectedNodes = params.nodes;
+
+    });
+
   },
   methods: {
-    printValues() {
-      console.log(this.nodes.get());
-      console.log(this.edges.get());
-    },
     onHoverNode(nodeId) {
-      console.log(this.nodes.get().find( node => node.id === nodeId));
+      if (!this.stationsVisibility) {
+        const node = this.nodes.get(nodeId);
+        this.nodes.update({id: nodeId, label: node.name});
+      }
     },
     offHoverNode(nodeId) {
-      console.log(this.nodes.get().find( node => node.id === nodeId));
+      if (!this.stationsVisibility) {
+        this.nodes.update({id: nodeId, label: ''});
+      }
     },
     calcItinerary() {
-      const selectedNodes = this.network.get().getSelectedNodes();
-      console.log(selectedNodes);
-    }
+      if (this.selectedNodes.length < 2) {
+        this.useSnackBar('At least two nodes must be selected', 'red');
+        return;
+      }
+      if (this.selectedNodes.length > 2) {
+        this.useSnackBar('Only two nodes can be selected', 'red');
+        return;
+      }
+
+      this.itineraryInProgress = true;
+      this.nodes.forEach((node) => {
+        this.nodes.update({ id: node.id, hidden: true });
+      });
+
+      const result = bellmanFord(this.nodes, this.edges, this.selectedNodes);
+
+      result.path.forEach((nodeId) => {
+        this.nodes.update({ id: nodeId, hidden: false });
+      });
+
+      this.useSnackBar(`Travel Time: ${result.totalTime} min`, 'cornflowerblue', 6000);
+    },
+    displayAllNodes() {
+      this.nodes.forEach((node) => {
+        this.nodes.update({ id: node.id, hidden: false });
+      });
+      this.itineraryInProgress = false;
+    },
+    toggleStationsVisibility() {
+      this.stationsVisibility = !this.stationsVisibility;
+      if (!this.stationsVisibility) {
+        this.nodes.forEach((node) => {
+          this.nodes.update({id: node.id, label: ''});
+        });
+      } else {
+        this.nodes.forEach((node) => {
+          if (node.shouldBeLabeled) {
+            this.nodes.update({id: node.id, label: node.name});
+          }
+        });
+      }
+    },
+    useSnackBar(text, color, duration = 3000) {
+      this.snackBarText = text;
+      const snackbar = document.querySelector('.snackbar');
+      snackbar.classList.add('snackbar-visible');
+      snackbar.setAttribute('style', `background-color: ${color}`);
+      setTimeout(() => {
+        snackbar.classList.remove('snackbar-visible');
+      }, duration);
+    },
+    coveringTree() {
+      this.edges.forEach((edge) => {
+        this.edges.update({ id: edge.id, hidden: true });
+      });
+
+      const result = prim(this.nodes, this.edges);
+
+      result.forEach((edge) => {
+        this.edges.update({ id: edge.id, hidden: false });
+      });
+
+      this.useSnackBar('Covering Tree displayed', 'green');
+    },
   }
 }
 </script>
 
 <template>
   <div id="mynetwork"></div>
+
   <div class="param-buttons">
-    <button class="buttonsActions" @click="printValues">Print Values</button>
-    <button class="buttonsActions" @click="calcItinerary">Calculate itinerary</button>
+    <button v-if="itineraryInProgress" class="buttons-actions cancel-button" @click="displayAllNodes">Cancel</button>
+    <button class="buttons-actions" @click="coveringTree">See covering Tree</button>
+    <button class="buttons-actions" @click="calcItinerary">Calculate Itinerary</button>
+    <button class="buttons-actions" @click="toggleStationsVisibility">Toggle Stations Visibility</button>
+  </div>
+
+  <div class="snackbar">
+    <p>{{ snackBarText }}</p>
   </div>
 </template>
 
@@ -119,14 +213,48 @@ export default {
   gap: 10px;
 }
 
-.buttonsActions {
+.buttons-actions {
   margin: 10px;
   padding: 5px 10px;
-  border: 1px solid lightgray;
+  border: 0;
+  background-color: cornflowerblue;
+  color: white;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s;
   height: 30px;
   width: auto;
 }
+
+.cancel-button {
+  background-color: palevioletred;
+  border: 0;
+  color: white;
+}
+
+.snackbar {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 3px 10px;
+  background-color: #222222;
+  color: #f2f2f2;
+  border-radius: 2px;
+  visibility: hidden;
+}
+
+.snackbar-visible {
+  animation: slidein 0.5s;
+  visibility: visible;
+}
+
+@keyframes slidein {
+  from { transform: translateX(-100px); }
+  to   { transform: translateX(0); }
+}
+
 </style>

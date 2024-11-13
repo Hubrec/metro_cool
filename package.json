@@ -11,6 +11,7 @@
   "dependencies": {
     "primeicons": "^7.0.0",
     "primevue": "^4.1.1",
+    "v-snackbars": "^3.2.8",
     "vis-data": "^7.1.9",
     "vis-network": "^9.1.9",
     "vue": "^3.5.12"
