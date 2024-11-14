@@ -5,6 +5,7 @@ import {extractLinks, extractNodes} from "@/service/http/fetchAPI.js";
 import {checkAndMakeConnectivity} from "@/service/algorithms/connectivity.js";
 import {bellmanFord} from "@/service/algorithms/shortestPath.js";
 import {prim} from "@/service/algorithms/coveringTree.js";
+import {ref} from "vue";
 
 export default {
   data() {
@@ -15,7 +16,10 @@ export default {
       stationsVisibility: true,
       selectedNodes: [],
       itineraryInProgress: false,
+      coveringTreeInProgress: false,
       snackBarText: '',
+      activeClass: ref('button-active'),
+
     };
   },
   async mounted() {
@@ -130,11 +134,20 @@ export default {
 
       this.useSnackBar(`Travel Time: ${result.totalTime} min`, 'cornflowerblue', 6000);
     },
-    displayAllNodes() {
-      this.nodes.forEach((node) => {
-        this.nodes.update({ id: node.id, hidden: false });
-      });
-      this.itineraryInProgress = false;
+    displayAllNodesAndEdges() {
+      if (this.itineraryInProgress) {
+        this.nodes.forEach((node) => {
+          this.nodes.update({ id: node.id, hidden: false });
+        });
+        this.itineraryInProgress = false;
+      }
+      if (this.coveringTreeInProgress) {
+        this.edges.forEach((edge) => {
+          this.edges.update({ id: edge.id, hidden: false });
+        });
+        this.coveringTreeInProgress = false;
+      }
+
     },
     toggleStationsVisibility() {
       this.stationsVisibility = !this.stationsVisibility;
@@ -150,7 +163,18 @@ export default {
         });
       }
     },
-    useSnackBar(text, color, duration = 3000) {
+    coveringTree() {
+      this.coveringTreeInProgress = true;
+      this.edges.forEach((edge) => {
+        this.edges.update({ id: edge.id, hidden: true });
+      });
+      const result = prim(this.nodes, this.edges);
+      result.forEach((edge) => {
+        this.edges.update({ id: edge.id, hidden: false });
+      });
+      this.useSnackBar('Covering Tree displayed', 'green');
+    },
+    useSnackBar(text, color, duration = 4000) {
       this.snackBarText = text;
       const snackbar = document.querySelector('.snackbar');
       snackbar.classList.add('snackbar-visible');
@@ -158,19 +182,6 @@ export default {
       setTimeout(() => {
         snackbar.classList.remove('snackbar-visible');
       }, duration);
-    },
-    coveringTree() {
-      this.edges.forEach((edge) => {
-        this.edges.update({ id: edge.id, hidden: true });
-      });
-
-      const result = prim(this.nodes, this.edges);
-
-      result.forEach((edge) => {
-        this.edges.update({ id: edge.id, hidden: false });
-      });
-
-      this.useSnackBar('Covering Tree displayed', 'green');
     },
   }
 }
@@ -180,9 +191,9 @@ export default {
   <div id="mynetwork"></div>
 
   <div class="param-buttons">
-    <button v-if="itineraryInProgress" class="buttons-actions cancel-button" @click="displayAllNodes">Cancel</button>
-    <button class="buttons-actions" @click="coveringTree">See covering Tree</button>
-    <button class="buttons-actions" @click="calcItinerary">Calculate Itinerary</button>
+    <button v-if="itineraryInProgress || coveringTreeInProgress" class="buttons-actions cancel-button" @click="displayAllNodesAndEdges">Cancel</button>
+    <button :class="[coveringTreeInProgress ? activeClass : '']" class="buttons-actions" @click="coveringTree">See covering Tree</button>
+    <button :class="[itineraryInProgress ? activeClass : '']" class="buttons-actions" @click="calcItinerary">Calculate Itinerary</button>
     <button class="buttons-actions" @click="toggleStationsVisibility">Toggle Stations Visibility</button>
   </div>
 
@@ -200,7 +211,6 @@ export default {
   width: 100%;
   height: 100%;
   backdrop-filter: contrast(0.8);
-  border: 1px solid lightgray;
 }
 
 .param-buttons {
@@ -224,6 +234,10 @@ export default {
   transition: background-color 0.3s;
   height: 30px;
   width: auto;
+}
+
+.button-active {
+  background-color: #073c9a;
 }
 
 .cancel-button {
@@ -253,7 +267,7 @@ export default {
 }
 
 @keyframes slidein {
-  from { transform: translateX(-100px); }
+  from { transform: translateX(-150px); }
   to   { transform: translateX(0); }
 }
 

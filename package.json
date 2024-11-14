@@ -9,8 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "primeicons": "^7.0.0",
-    "primevue": "^4.1.1",
+    "@datastructures-js/priority-queue": "^6.3.1",
     "v-snackbars": "^3.2.8",
     "vis-data": "^7.1.9",
     "vis-network": "^9.1.9",

@@ -1,35 +1,45 @@
-import { DataSet } from 'vis-data';
+import {MinPriorityQueue} from "@datastructures-js/priority-queue";
 
 export function prim(nodes, edges) {
   const result = [];
   const edgeList = edges.get();
   const nodeSet = new Set();
-  const edgeQueue = [];
+  const edgeQueue = new MinPriorityQueue(edge => edge.time); // Using a priority queue
+  const visitedEdges = new Set();
 
   // Start with the first node
-  nodeSet.add(nodes.get()[0].id);
+  const startNode = nodes.get()[0].id;
+  nodeSet.add(startNode);
 
-  while (nodeSet.size < nodes.length) {
-    edgeList.forEach((edge) => {
-      if (nodeSet.has(edge.from) && !nodeSet.has(edge.to)) {
-        edgeQueue.push(edge);
-      } else if (nodeSet.has(edge.to) && !nodeSet.has(edge.from)) {
-        edgeQueue.push(edge);
-      }
-    });
-
-    edgeQueue.sort((a, b) => a.value - b.value);
-
-    const nextEdge = edgeQueue.shift();
-    if (!nodeSet.has(nextEdge.from)) {
-      nodeSet.add(nextEdge.from);
+  edgeList.forEach(edge => {
+    if (edge.from === startNode || edge.to === startNode) {
+      edgeQueue.enqueue(edge);
+      visitedEdges.add(edge);
     }
-    if (!nodeSet.has(nextEdge.to)) {
-      nodeSet.add(nextEdge.to);
-    }
+  });
 
-    result.push(nextEdge);
+  while (nodeSet.size < nodes.length && !edgeQueue.isEmpty()) {
+    const nextEdge = edgeQueue.dequeue();
+
+    // Check if adding this edge expands the set of visited nodes
+    if (!nodeSet.has(nextEdge.from) || !nodeSet.has(nextEdge.to)) {
+      result.push(nextEdge);
+
+      // Add the new node to the set of visited nodes
+      const newNode = nodeSet.has(nextEdge.from) ? nextEdge.to : nextEdge.from;
+      nodeSet.add(newNode);
+
+      // Add edges connected to the new node
+      edgeList.forEach(edge => {
+        if ((edge.from === newNode && !nodeSet.has(edge.to)) || (edge.to === newNode && !nodeSet.has(edge.from))) {
+          if (!visitedEdges.has(edge)) {
+            edgeQueue.enqueue(edge);
+            visitedEdges.add(edge);
+          }
+        }
+      });
+    }
   }
 
-  return new DataSet(result);
+  return result;
 }
